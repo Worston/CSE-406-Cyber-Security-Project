@@ -1,63 +1,94 @@
-# Dictionary Attack + Known Password Attack — Tool 9
+# Dictionary Attack + Known Password Attack — Webapp Version
 
-Custom TCP login server ("victim") and two attacker tools, built from
-scratch (no existing brute-forcing/cracking tool used). See the wire
-protocol documented at the top of `victim_server.py`.
+Per supervisor guidance: a basic signup/login webapp (Flask + SQLite)
+is the victim application. "Victim action" = signing up and logging
+in normally. "Attacker action" = the two attacks below. Defense
+(lockout + slow password hashing) is implemented as a core part of
+the project, not just the bonus.
 
-## Setup
+Password hashing itself is hand-written in `db.py` (salted SHA-256 in
+vulnerable mode, salted PBKDF2-HMAC-SHA256 in defended mode) — Flask
+is used only as the web/HTTP framework, not as an attack tool. The
+attacker scripts are our own code driving plain HTTP requests, not an
+existing brute-forcer.
+
+## One-time setup
+
+From the project root:
+```
+python3 -m venv .venv
+./.venv/bin/pip install -r requirements.txt
+```
+
+## Demo 1 — vulnerable (baseline)
 
 ```
 cd src
-python3 users.py          # generates users.json (seeded accounts)
+rm -f app.db
+../.venv/bin/python seed.py                 # creates demo accounts, fast hash, no lockout
+../.venv/bin/python app.py                   # starts server on 0.0.0.0:5000
 ```
 
-Seeded accounts (`users.py` for the plaintext — used only to build the
-report/demo, real passwords are never sent anywhere except the attack
-itself):
+In a browser: open `http://<victim-ip>:5000/signup`, create a new
+account, then log in with it — this is the "victim" normal-use
+screenshot for the report.
 
-| user  | role in the demo                                   |
-|-------|------------------------------------------------------|
-| alice | dictionary-attack target (weak password)              |
-| bob   | dictionary-attack target (weak password)              |
-| carol | dictionary-attack target (weak password)              |
-| dave  | negative control — strong password, should NOT crack  |
-| eve   | known-password / spray target (shared default pw)     |
-| frank | known-password / spray target (same shared default)   |
-
-## Run — undefended (baseline)
-
-Terminal 1 (victim):
+From the attacker machine/terminal:
 ```
-python3 victim_server.py --host 0.0.0.0 --port 5000
+python attacker_dict.py --url http://<victim-ip>:5000 --user alice --wordlist wordlist.txt
+python attacker_spray.py --url http://<victim-ip>:5000 --userlist targets.txt --passwords known_passwords.txt
 ```
 
-Terminal 2 (attacker) — dictionary attack on one account:
-```
-python3 attacker_dict.py --host <victim_ip> --port 5000 --user alice --wordlist wordlist.txt
-```
+Expected: `alice` cracked within ~20 attempts; `eve` and `frank`
+compromised by the shared default password `admin123`; `dave` (strong
+password) resists both.
 
-Terminal 2 (attacker) — known-password attack across accounts:
-```
-python3 attacker_spray.py --host <victim_ip> --port 5000 --userlist targets.txt --passwords known_passwords.txt
-```
-
-## Run — defended (bonus countermeasure: lockout + slow hash)
+## Demo 2 — defended
 
 ```
-python3 victim_server.py --host 0.0.0.0 --port 5000 --defense
+cd src
+rm -f app.db
+../.venv/bin/python seed.py --defense
+DEFENSE=1 ../.venv/bin/python app.py
 ```
 
-Re-run the same attacker commands against this server and compare
-`logs/attacker_dict.log` / `logs/attacker_spray.log` and
-`logs/server.log` against the undefended run.
+Re-run the exact same attacker commands. Expected: each login attempt
+takes noticeably longer (PBKDF2, ~200k iterations), and the account
+locks (`HTTP 429`) after 5 failed attempts within 30s, for 60s —
+blocking the dictionary attack outright. Compare `logs/server.log`
+and the attacker logs between the two runs for the report's
+before/after evidence.
+
+## Seeded accounts (`seed.py`)
+
+| user  | password       | role                                            |
+|-------|----------------|--------------------------------------------------|
+| alice | sunshine       | dictionary-attack target                          |
+| bob   | dragon         | dictionary-attack target                          |
+| carol | letmein        | dictionary-attack target                          |
+| dave  | Xk7$vQ2!mZpL9r | negative control — should resist both attacks     |
+| eve   | admin123       | known-password / spray target (shared default)    |
+| frank | admin123       | known-password / spray target (shared default)    |
+
+## Response signals the attacker tools rely on
+
+- `HTTP 302` (redirect to `/dashboard`) → login succeeded
+- `HTTP 429` → account locked (defense mode only)
+- `HTTP 200` → login failed
 
 ## Two-VM setup
 
-1. Create two VMs (attacker, victim) on a VirtualBox/VMware host-only
-   or internal network.
-2. Run `victim_server.py` on the victim VM, bound to `0.0.0.0`.
-3. Run the attacker scripts from the attacker VM pointed at the
-   victim's IP.
-4. Capture a Wireshark trace on either VM for the packet-detail
-   section of the design report (Wireshark is used only to observe
-   traffic, not as part of the attack tool itself).
+Copy the whole project (or at least `src/` and `requirements.txt`) to
+both VMs and create a **fresh venv on each** — don't copy `.venv/`
+itself across machines, since its activation scripts have absolute
+paths baked in and it may not match the VM's Python build:
+
+```
+python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt
+```
+
+Victim VM runs `app.py` bound to `0.0.0.0`; attacker VM runs the two
+attacker scripts pointed at the victim's IP over `http://`. Capture a
+browser screenshot of a normal signup/login on the victim VM, and a
+Wireshark trace of the HTTP POST traffic for the design report's
+packet-detail section.

@@ -3,8 +3,8 @@
 *Group members: ______________  |  Course: CSE406  |  Deadline: Week 11*
 
 *Responsibility split: fill in per-member ownership before submitting
-(e.g. Member A — victim server + defense; Member B — attacker tools +
-report diagrams).*
+(e.g. Member A — webapp + defense; Member B — attacker tools + report
+diagrams).*
 
 ## a. Definition of the attack + topology diagram
 
@@ -23,25 +23,35 @@ credentials rather than weak individual passwords, and is harder to
 detect with a naive per-account lockout because no single account
 receives many failed attempts.
 
-Both attacks are implemented as active online attacks against a
-custom TCP login service we wrote (`victim_server.py`) — not against
-an existing service like SSH/FTP, since the assignment requires our
-own protocol implementation.
+Both attacks target a small signup/login web application we built
+ourselves (`src/app.py`, Flask + SQLite) — per supervisor guidance,
+the victim is a basic webapp with real signup/login/database, not an
+existing service. The "victim action" is a normal user signing up and
+logging in through the browser; the "attacker action" is the two
+attacks below, driven by our own HTTP client code (`attacker_dict.py`,
+`attacker_spray.py`) — not an existing brute-forcing tool.
 
 **Topology:**
 
 ```
         Host-only / internal virtual network (192.168.56.0/24)
 
-  +----------------------+                     +----------------------+
-  |   Attacker VM        |                     |   Victim VM           |
-  |   192.168.56.10       |  <---- TCP:5000 --->|   192.168.56.20        |
-  |                        |                     |                        |
-  |  attacker_dict.py      |                     |  victim_server.py      |
-  |  attacker_spray.py     |                     |  users.json            |
-  |  wordlist.txt           |                     |  defense.py (lockout)  |
-  |  known_passwords.txt    |                     |  logs/server.log        |
-  +----------------------+                     +----------------------+
+  +------------------------+                   +--------------------------+
+  |   Attacker VM           |                   |   Victim VM               |
+  |   192.168.56.10          |  <-- HTTP:5000 -->|   192.168.56.20            |
+  |                           |                   |                            |
+  |  attacker_dict.py         |                   |  app.py (Flask)            |
+  |  attacker_spray.py        |                   |  db.py + app.db (SQLite)   |
+  |  wordlist.txt               |                   |  defense.py (lockout)      |
+  |  known_passwords.txt        |                   |  logs/server.log             |
+  +------------------------+                   +--------------------------+
+                                                          ^
+                                                          | HTTP (browser)
+                                                    +------------+
+                                                    | Legit user  |
+                                                    | (victim VM  |
+                                                    |  or 3rd host)|
+                                                    +------------+
 ```
 
 *(Replace with your actual VirtualBox host-only subnet/IPs once the
@@ -49,31 +59,41 @@ VMs are set up; add a screenshot of `ip addr` from both VMs.)*
 
 ## b. Timing diagrams
 
-**Normal (legitimate) login — single exchange:**
+**Normal (legitimate) signup + login — browser flow:**
 
 ```
-Client                          Server
-  |  connect                       |
-  |-------------------------------->|
-  |  USER alice\n                   |
-  |-------------------------------->|
-  |            331 password required|
-  |<--------------------------------|
-  |  PASS <correct password>\n      |
-  |-------------------------------->|
-  |                     230 login ok|
-  |<--------------------------------|
-  |  close                          |
+Browser                                   Server (Flask)
+  |  GET /signup                              |
+  |------------------------------------------->|
+  |                          200 signup form   |
+  |<-------------------------------------------|
+  |  POST /signup  username=alice&password=... |
+  |------------------------------------------->|
+  |                302 redirect -> /login       |
+  |<-------------------------------------------|
+  |  GET /login                                 |
+  |------------------------------------------->|
+  |                            200 login form   |
+  |<-------------------------------------------|
+  |  POST /login  username=alice&password=...   |
+  |------------------------------------------->|
+  |               302 redirect -> /dashboard    |
+  |<-------------------------------------------|
+  |  GET /dashboard  (Cookie: session=...)       |
+  |------------------------------------------->|
+  |                        200 "Welcome, alice"  |
+  |<-------------------------------------------|
 ```
 
 **Dictionary attack — repeated exchange, one account:**
 
 ```
 for each password in wordlist:
-    connect -> USER alice -> 331
-    PASS <candidate> -> 530 login failed   (repeat, N times)
-    ...
-    PASS <candidate_k> -> 230 login ok     (attack ends: success)
+    POST /login  username=alice&password=<candidate>
+        -> 200 (login page, "invalid username or password")   (repeat, N times)
+        ...
+    POST /login  username=alice&password=<candidate_k>
+        -> 302 Location: /dashboard                            (attack ends: success)
 ```
 
 **Known-password attack — repeated exchange, many accounts:**
@@ -81,16 +101,16 @@ for each password in wordlist:
 ```
 for each known_password in {admin123, password123, ...}:
     for each username in {alice, bob, carol, dave, eve, frank}:
-        connect -> USER <username> -> 331
-        PASS <known_password> -> 530 | 230
+        POST /login  username=<username>&password=<known_password>
+            -> 200 (failed)  |  302 (success)
 ```
 
 **With the lockout defense active:**
 
 ```
-attempt 1..4: PASS <candidate> -> 530 login failed
-attempt 5:    PASS <candidate> -> 530 login failed   (5th failure -> lockout armed)
-attempt 6+:   PASS <candidate> -> 503 account locked (attack blocked for 60s)
+attempt 1..4: POST /login -> 200 "invalid username or password"
+attempt 5:    POST /login -> 200 "invalid username or password"   (5th failure -> lockout armed)
+attempt 6+:   POST /login -> 429 "account temporarily locked"     (attack blocked for 60s)
 ```
 
 *(Redraw these as proper sequence diagrams — e.g. with draw.io,
@@ -99,44 +119,62 @@ above are the content to transcribe.)*
 
 ## c. Packet / frame / segment details
 
-Transport: standard TCP (SOCK_STREAM) over the virtual network — no
-raw Ethernet/IP crafting is needed for this attack class, since the
-exploit is at the application layer. What we designed ourselves is the
-**application-layer protocol** carried in the TCP payload:
+Transport: standard TCP carrying HTTP/1.1 (Flask's built-in dev
+server) — no raw Ethernet/IP crafting is needed for this attack class,
+since the exploit is at the application layer. What we designed
+ourselves is the **application behavior and payload** the HTTP request
+carries and how the server interprets it — not an existing auth
+protocol implementation.
 
-| Direction | Message            | Format                          |
-|-----------|---------------------|----------------------------------|
-| C -> S    | Username            | `USER <username>\n`             |
-| S -> C    | Ack, request password | `331 password required\n`    |
-| C -> S    | Password attempt    | `PASS <password>\n`             |
-| S -> C    | Success             | `230 login ok\n`                 |
-| S -> C    | Failure             | `530 login failed\n`            |
-| S -> C    | Locked (defense on) | `503 account locked\n`          |
-| S -> C    | Malformed request   | `400 expected USER\|PASS\n`     |
+**Request (attacker or browser -> server), one per login attempt:**
+
+```
+POST /login HTTP/1.1
+Host: 192.168.56.20:5000
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 33
+
+username=alice&password=sunshine
+```
+
+**Responses, by outcome:**
+
+| Outcome | Status | Notable headers/body |
+|---|---|---|
+| Success | `302 FOUND` | `Location: /dashboard`, `Set-Cookie: session=...` |
+| Failure | `200 OK` | login page HTML containing "invalid username or password" |
+| Locked (defense on) | `429 TOO MANY REQUESTS` | login page HTML containing "account temporarily locked" |
 
 Design notes to include with packet captures:
-- One TCP connection = one login attempt (3-way handshake, 2 payload
-  round trips, FIN/ACK teardown) — capture this in Wireshark and
-  annotate source/destination port, sequence numbers, and the ASCII
-  payload of each segment.
-- The `USER` response is identical (`331`) whether or not the account
-  exists, so the protocol does not leak account existence before the
-  password stage — note this as a deliberate design choice.
+- Each attempt opens its own TCP connection (the attacker scripts use
+  a plain `requests.post()` call per attempt, no session reuse) — a
+  full 3-way handshake, HTTP request/response, then FIN/ACK teardown
+  per attempt. Capture this in Wireshark and annotate source/
+  destination port, sequence numbers, and the HTTP payload of each
+  segment (`Follow > HTTP Stream` is the easiest way to show this in
+  the report).
+- The response to a failed login is intentionally the same generic
+  "invalid username or password" whether the username doesn't exist
+  or the password is wrong — the app does not leak account existence.
+  Constant-shape hashing (`db.py`, `verify_user`) additionally hashes
+  against a dummy salt when the username doesn't exist, so a
+  nonexistent-user request doesn't return measurably faster than a
+  wrong-password request.
 - Server-side credential storage: `salt (16 bytes) + SHA-256(salt +
   password)` in undefended mode; `salt + PBKDF2-HMAC-SHA256(password,
-  salt, 200000 iterations)` in defended mode. Passwords are never
-  stored or transmitted in plaintext except as the live attack
-  attempt itself (mirroring how a real Telnet/FTP-style plaintext
-  login is vulnerable to sniffing, tying back to Tool 2 in this
-  course).
+  salt, 200000 iterations)` in defended mode. Passwords are sent in
+  cleartext form data over plain HTTP in this demo (no TLS) — a
+  deliberate simplification consistent with the assignment's other
+  plaintext-protocol attacks (e.g. Tool 2's Telnet/HTTP sniffing), and
+  worth noting as a limitation vs. a production deployment (which
+  would use HTTPS).
 
 ## d. Justification
 
 - The victim accounts are deliberately seeded with passwords drawn
   from `wordlist.txt` (alice/bob/carol), so the dictionary attack is
-  expected to succeed within the first few dozen attempts — we
-  estimate success within *N* attempts out of a *M*-word list (fill
-  in actual N from your test run; measured locally: 17/50 attempts).
+  expected to succeed within the first few dozen attempts — measured
+  locally: `alice` cracked in 17/50 attempts (~0.03s, undefended).
 - `eve` and `frank` share a common default password (`admin123`) that
   also exists in `known_passwords.txt`, so the spray attack is
   expected to compromise both without needing a large wordlist against
@@ -147,18 +185,19 @@ Design notes to include with packet captures:
   demonstrating the attacks fail against passwords that aren't
   guessable from common lists, not just "the tool is broken."
 - Without rate limiting, an attacker can attempt logins as fast as the
-  network/CPU allows (measured: ~1700 attempts/sec locally against the
-  undefended server), making a wordlist of any realistic size
+  network/CPU allows, making a wordlist of any realistic size
   crackable in seconds. This justifies why the lockout + slow-hash
-  countermeasure (Section d of the Final Report) is necessary and
-  measurably effective (measured: PBKDF2 raises per-attempt cost from
-  ~0.06 ms to ~90 ms, and lockout halts the attack entirely after 5
-  failed attempts).
+  countermeasure is necessary and measurably effective: in local
+  testing, enabling `DEFENSE=1` raised each login attempt's cost from
+  roughly 1-2 ms to ~55 ms (PBKDF2, 200,000 iterations) and the
+  dictionary attack against `alice` was locked out (`HTTP 429`) after
+  6 attempts (~0.27s), fully blocking the crack.
 
 ---
 *TODO before submission:* replace the ASCII diagrams with drawn
 versions, insert VM IP addresses and an `ifconfig`/`ip addr`
 screenshot, insert a Wireshark capture screenshot with 2-3 annotated
-packets, and fill in the actual measured numbers from your own test
-run (some placeholders above are pre-filled from a local test — rerun
-on your VMs and update).
+HTTP request/response pairs (and a "Follow HTTP Stream" view), and a
+browser screenshot of a normal signup + login + dashboard flow as the
+"victim action" evidence. Numbers above are from local single-host
+testing — rerun on your VMs and update.

