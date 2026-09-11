@@ -195,7 +195,7 @@ Defense module & Tracks failed login attempts per account and enforces temporary
 Dictionary-attack script & Attacker tool: many candidate passwords against one account \\
 Spray-attack script & Attacker tool: a few known passwords against many accounts \\
 Wordlist / known-password list & Input data for the two attacker scripts \\
-Server / attacker logs & Record every login attempt and outcome, for the Final Report \\
+Server / attacker logs & Record every login attempt and outcome \\
 \bottomrule
 \end{tabularx}
 \caption{System components and their roles.}
@@ -218,13 +218,13 @@ failed attempt}, and \textcolor{lockred}{red for a lockout}.
 \centering
 \begin{tikzpicture}[
   reqmsg/.style={-{Latex[length=2.2mm]}, thick, steel},
-  okmsg/.style={-{Latex[length=2.2mm]}, thick, oklive},
+  okmsg/.style={-{Latex[length=2.2mm]}, thick, dashed, oklive},
   lbl/.style={font=\scriptsize, midway, above}
 ]
 \node[font=\bfseries\small, text=oklive] at (0,0.4) {Browser};
 \node[font=\bfseries\small, text=victimblue] at (9,0.4) {Server (Flask)};
-\draw[dashed, gray!60] (0,0) -- (0,-8.2);
-\draw[dashed, gray!60] (9,0) -- (9,-8.2);
+\draw[gray!60] (0,0) -- (0,-8.2);
+\draw[gray!60] (9,0) -- (9,-8.2);
 
 \draw[reqmsg] (0,-0.6)  -- (9,-0.6)  node[lbl]{GET /signup};
 \draw[okmsg]  (9,-1.4)  -- (0,-1.4)  node[lbl]{200 signup form};
@@ -246,14 +246,14 @@ failed attempt}, and \textcolor{lockred}{red for a lockout}.
 \centering
 \begin{tikzpicture}[
   reqmsg/.style={-{Latex[length=2.2mm]}, thick, attackerred},
-  failmsg/.style={-{Latex[length=2.2mm]}, thick, warnamber!90!black},
-  okmsg/.style={-{Latex[length=2.2mm]}, thick, oklive},
+  failmsg/.style={-{Latex[length=2.2mm]}, thick, dashed, warnamber!90!black},
+  okmsg/.style={-{Latex[length=2.2mm]}, thick, dashed, oklive},
   lbl/.style={font=\scriptsize, midway, above}
 ]
 \node[font=\bfseries\small, text=attackerred] at (0,0.4) {Attacker};
 \node[font=\bfseries\small, text=victimblue] at (9,0.4) {Server};
-\draw[dashed, gray!60] (0,0) -- (0,-6.6);
-\draw[dashed, gray!60] (9,0) -- (9,-6.6);
+\draw[gray!60] (0,0) -- (0,-6.6);
+\draw[gray!60] (9,0) -- (9,-6.6);
 
 \draw[dashed, steel, rounded corners] (-0.6,-0.5) rectangle (9.6,-3.3);
 \node[font=\scriptsize, text=steel, anchor=north west] at (-0.6,-0.5)
@@ -277,13 +277,13 @@ single account.}
 \centering
 \begin{tikzpicture}[
   reqmsg/.style={-{Latex[length=2.2mm]}, thick, attackerred},
-  mixmsg/.style={-{Latex[length=2.2mm]}, thick, warnamber!90!black},
+  mixmsg/.style={-{Latex[length=2.2mm]}, thick, dashed, warnamber!90!black},
   lbl/.style={font=\scriptsize, midway, above}
 ]
 \node[font=\bfseries\small, text=attackerred] at (0,0.4) {Attacker};
 \node[font=\bfseries\small, text=victimblue] at (9,0.4) {Server};
-\draw[dashed, gray!60] (0,0) -- (0,-5.6);
-\draw[dashed, gray!60] (9,0) -- (9,-5.6);
+\draw[gray!60] (0,0) -- (0,-5.6);
+\draw[gray!60] (9,0) -- (9,-5.6);
 
 \draw[dashed, steel, rounded corners] (-0.6,-0.5) rectangle (9.6,-5.0);
 \node[font=\scriptsize, text=steel, anchor=north west] at (-0.6,-0.5)
@@ -306,14 +306,14 @@ accounts.}
 \centering
 \begin{tikzpicture}[
   reqmsg/.style={-{Latex[length=2.2mm]}, thick, attackerred},
-  failmsg/.style={-{Latex[length=2.2mm]}, thick, warnamber!90!black},
-  lockmsg/.style={-{Latex[length=2.2mm]}, ultra thick, lockred},
+  failmsg/.style={-{Latex[length=2.2mm]}, thick, dashed, warnamber!90!black},
+  lockmsg/.style={-{Latex[length=2.2mm]}, ultra thick, dashed, lockred},
   lbl/.style={font=\scriptsize, midway, above}
 ]
 \node[font=\bfseries\small, text=attackerred] at (0,0.4) {Attacker};
 \node[font=\bfseries\small, text=victimblue] at (9,0.4) {Server};
-\draw[dashed, gray!60] (0,0) -- (0,-5.4);
-\draw[dashed, gray!60] (9,0) -- (9,-5.4);
+\draw[gray!60] (0,0) -- (0,-5.4);
+\draw[gray!60] (9,0) -- (9,-5.4);
 
 \draw[reqmsg]  (0,-0.8) -- (9,-0.8) node[lbl]{attempts 1--4: POST /login};
 \draw[failmsg] (9,-1.6) -- (0,-1.6) node[lbl]{200 ``invalid username or password'' (each)};
@@ -331,12 +331,10 @@ attempts within a 30-second window.}
 % ==================================================
 \section{Packet and Frame Structure}
 
-This section is less central for a dictionary/known-password attack than for
-attacks such as ARP poisoning or SYN flooding, where the attack itself consists of a
-forged or malformed packet: no raw Ethernet/IP crafting is needed here, since the
-exploit is entirely at the application layer, carried over an ordinary TCP
-connection. What is still worth designing from scratch is the \emph{application
-behaviour and the payload} carried by the HTTP request, and how it is meant to be
+No raw Ethernet/IP crafting is needed here, since the exploit is entirely at the
+application layer, carried over an ordinary TCP connection. What is still worth
+designing from scratch is the \emph{application behaviour and the payload} carried
+by the HTTP request, and how it is meant to be
 interpreted by the server --- not an existing authentication protocol
 implementation. Transport will be standard TCP carrying HTTP/1.1 (Flask's built-in
 development server); the exact request/response format below is the intended design
@@ -375,22 +373,16 @@ username=alice&password=sunshine
 \begin{itemize}[leftmargin=*]
   \item Its own TCP connection will be opened by each attempt (one HTTP request is
     issued per attempt by the attacker scripts, with no session reuse) --- a full
-    3-way handshake, HTTP request/response, then FIN/ACK teardown per attempt. A
-    Wireshark capture of this is not required to make the case for the attack, since
-    an ordinary HTTP request/response is all that is exchanged; the attacker's own
-    logs (timestamp, username, password tried, response) already document every
-    attempt just as clearly. A capture is treated as optional, convenient evidence
-    for the Final Report rather than a planned deliverable --- if the two-VM setup is
-    already up, one could be taken in a couple of minutes (\emph{Follow $>$ HTTP
-    Stream} is the easiest way to show a request/response pair), but skipping it
-    would not weaken the report.
+    3-way handshake, HTTP request/response, then FIN/ACK teardown per attempt. Since
+    an ordinary HTTP request/response is all that is exchanged, the attacker's own
+    logs (timestamp, username, password tried, response) are enough to document
+    every attempt for the Final Report.
   \item The response to a failed login will be the same generic ``invalid username or
     password'' whether the username does not exist or the password is wrong, so that
     account existence is not leaked.
-  \item Passwords will be sent as cleartext form data over plain HTTP in this demo (no
-    TLS) --- a deliberate simplification consistent with the assignment's other
-    plaintext-protocol attacks (e.g.\ Tool 2's Telnet/HTTP sniffing), and worth noting
-    as a limitation versus a production deployment, which would use HTTPS.
+  \item Passwords will be sent as cleartext form data over plain HTTP in this demo
+    (no TLS), which is worth noting as a limitation versus a production deployment,
+    which would use HTTPS.
 \end{itemize}
 
 % ==================================================
@@ -428,17 +420,76 @@ The project will be built in the following stages.
     \end{itemize}
   \item \textbf{Defense mechanism.} Failed attempts will be recorded per username by
     a lockout tracker, and an account will be temporarily locked once a threshold is
-    reached, plus the slow-hash mode described above (details in Section 6).
+    reached, plus the slow-hash mode described above (details in Section 7).
   \item \textbf{Test environment.} Initial development and functional testing will be
     carried out on a single machine (localhost), so that protocol logic is validated
     before network variables are introduced; the final demo will be run on two
-    VirtualBox VMs on a host-only network, matching the topology in Section 2, with a
-    Wireshark capture taken on the link between them.
+    VirtualBox VMs on a host-only network, matching the topology in Section 2.
   \item \textbf{Evaluation.} Both attacks will be run against the undefended webapp,
     and outcome/timing will be recorded; the defense mode will then be enabled, the
     account store reset, and the same attacks re-run, with the same metrics recorded;
     the two runs will be compared for the Final Report.
 \end{enumerate}
+
+% ==================================================
+\section{Design Justification}
+
+Before the evaluation in Section~6 is presented, the reasoning behind why the
+design above is expected to work is laid out here.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{The dictionary attack is expected to succeed on a weak password.}
+    Password-reuse and weak-password studies consistently find that a large share
+    of real-world passwords are drawn from a comparatively small set of common
+    strings, which is exactly what a dictionary attack exploits. The seeded
+    accounts \texttt{alice}, \texttt{bob}, and \texttt{carol} will be given
+    passwords (\texttt{sunshine}, \texttt{dragon}, \texttt{letmein}) that appear
+    inside the 50-entry wordlist, so a match is expected to be found well before
+    the list is exhausted. \texttt{dave}'s password, by contrast, will be
+    high-entropy and deliberately absent from the wordlist, so it should resist
+    the attack. This negative control is what will allow a successful crack to be
+    attributed to the password actually being weak, rather than to a bug in the
+    attack script.
+  \item \textbf{The spray attack is expected to succeed independently of the
+    dictionary.} \texttt{eve} and \texttt{frank} will be given the single shared
+    password \texttt{admin123}, which does not need to appear anywhere in the
+    50-word dictionary at all. Only one correct guess per \emph{password} is
+    needed by the spray attack, amortized over every account it is tried
+    against, so both accounts can be compromised in a single pass regardless of
+    how the dictionary attack performs. This is why the two attacks are treated
+    as complementary rather than redundant: one exploits weak individual
+    passwords, and the other exploits password reuse across accounts.
+  \item \textbf{No raw packet or frame crafting should be required.} A login form
+    is an application-layer exploit. Reliable, in-order delivery of the HTTP
+    request is already guaranteed by TCP, so the ``exploit'' lives entirely in the
+    payload and server logic (Section~3), not in headers manipulated below layer 4.
+    This is regarded as a natural consequence of the attack class, not a shortcut
+    being taken.
+  \item \textbf{The lockout defense is expected to stop the dictionary attack.}
+    With the threshold set to $k=5$ failed attempts per 30-second window, only
+    $k$ guesses, in expectation, will be available to an attacker who does not
+    already know the password before a 60-second lockout is triggered. Against a
+    50-word list, this caps the probability of success per lockout cycle at
+    $k/50 = 10\%$ for a password placed uniformly at random in the list,
+    compared to a near-certainty, given enough time, in the undefended case.
+    This is why the defended dictionary attack is expected to be blocked rather
+    than merely slowed down.
+  \item \textbf{The slow hash is expected to matter even when lockout does not.}
+    PBKDF2-HMAC-SHA256 at 200{,}000 iterations costs on the order of
+    $2\times10^5$ times as many underlying hash operations as the single
+    SHA-256 hash used in the undefended mode. This is the standard argument for
+    slow hashing: the CPU cost of \emph{every} guess is raised by several orders
+    of magnitude, which still matters in a scenario the per-account lockout
+    cannot reach, namely an attacker who has exfiltrated the password-hash table
+    and is guessing offline, with no server left to enforce a lockout.
+  \item \textbf{Failure responses are designed not to leak account existence.}
+    The same generic ``invalid username or password'' message (Section~3) will
+    be returned whether the password is wrong or the username does not exist at
+    all, and hashing will be performed against a dummy salt when the username is
+    missing, so that a nonexistent account does not respond measurably faster.
+    Together these are meant to stop an attacker from using the login endpoint
+    itself to enumerate valid usernames before attacking them.
+\end{itemize}
 
 % ==================================================
 \section{Expected Outcome of a Successful Attack}
@@ -522,15 +573,16 @@ The target, protocol, and topology for a dictionary attack and a known-password
 out in this design report, together with a concrete lockout- and slow-hash-based
 defense. The environment the attacks will run in is fixed by Section~2, the exact
 request/response format they will exploit is pinned down by Section~3, and the work
-is broken into independently testable stages by Section~4. What a successful attack
+is broken into independently testable stages by Section~4. The reasoning behind why
+the design is expected to work is laid out by Section~5. What a successful attack
 and a successful defense should look like is committed to, in advance, by
-Sections~5 and~6, so that the Final Report can be judged against a clear baseline
+Sections~6 and~7, so that the Final Report can be judged against a clear baseline
 rather than justified after the fact.
 
 The next milestone is implementation: the webapp and the two attacker tools will be
 built, the two-VM topology described in Section~2 will be stood up, and the
 evaluation from Section~4 will be run, so that the expected figures throughout this
-report can be replaced with measured ones, timing data, and packet captures for the
-Final Report and demo.
+report can be replaced with measured ones and timing data for the Final Report and
+demo.
 
 \end{document}
