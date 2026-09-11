@@ -205,12 +205,7 @@ Server / attacker logs & Record every login attempt and outcome \\
 \subsection{Timing Diagrams}
 
 The protocol to be implemented and the attack strategies to be run against it are
-described in the diagrams below --- the intended design, to be verified once the
-webapp and attacker scripts exist. Request arrows (client $\rightarrow$ server) are
-shown in
-\textcolor{steel}{steel blue}; responses are colored by outcome ---
-\textcolor{oklive}{green for success}, \textcolor{warnamber!90!black}{amber for a
-failed attempt}, and \textcolor{lockred}{red for a lockout}.
+described in the diagrams below --- 
 
 \subsubsection{Normal (legitimate) signup + login --- browser flow}
 
@@ -291,7 +286,7 @@ single account.}
 
 \draw[dashed, victimblue, rounded corners] (-0.2,-1.0) rectangle (9.2,-4.5);
 \node[font=\scriptsize, text=victimblue, anchor=north west] at (-0.2,-1.0)
-  {loop~[for each username in \{alice, bob, carol, dave, eve, frank\}]};
+  {loop~[for each username in \{alice, bob, ...\}]};
 
 \draw[reqmsg] (0,-2.6) -- (9,-2.6) node[lbl]{POST /login (user=\textless username\textgreater, password=\textless known\_password\textgreater)};
 \draw[mixmsg] (9,-3.6) -- (0,-3.6) node[lbl]{\textcolor{warnamber!90!black}{200 (fail)} or \textcolor{oklive}{302 (success)}};
@@ -332,8 +327,7 @@ attempts within a 30-second window.}
 \section{Packet and Frame Structure}
 
 No raw Ethernet/IP crafting is needed here, since the exploit is entirely at the
-application layer, carried over an ordinary TCP connection. What is still worth
-designing from scratch is the \emph{application behaviour and the payload} carried
+application layer, carried over an ordinary TCP connection. What is still being designed from scratch is the \emph{application behaviour and the payload} carried
 by the HTTP request, and how it is meant to be
 interpreted by the server --- not an existing authentication protocol
 implementation. Transport will be standard TCP carrying HTTP/1.1 (Flask's built-in
@@ -560,29 +554,7 @@ Dictionary attack outcome & \textcolor{oklive}{expected to succeed} & \textcolor
 Spray attack outcome & \textcolor{oklive}{expected to succeed on reused-password accounts} & \textcolor{warnamber!90!black}{expected to be throttled per account} \\
 \bottomrule
 \end{tabularx}
-\caption{Expected before/after effect of the lockout + slow-hash countermeasure. Actual
-figures will be measured once the webapp and attacker scripts are implemented, and
-reported in the Final Report.}
+\caption{Expected before/after effect of the lockout + slow-hash countermeasure.}
 \end{table}
-
-% ==================================================
-\section{Conclusion}
-
-The target, protocol, and topology for a dictionary attack and a known-password
-(spray) attack against a purpose-built, vulnerable signup/login webapp have been laid
-out in this design report, together with a concrete lockout- and slow-hash-based
-defense. The environment the attacks will run in is fixed by Section~2, the exact
-request/response format they will exploit is pinned down by Section~3, and the work
-is broken into independently testable stages by Section~4. The reasoning behind why
-the design is expected to work is laid out by Section~5. What a successful attack
-and a successful defense should look like is committed to, in advance, by
-Sections~6 and~7, so that the Final Report can be judged against a clear baseline
-rather than justified after the fact.
-
-The next milestone is implementation: the webapp and the two attacker tools will be
-built, the two-VM topology described in Section~2 will be stood up, and the
-evaluation from Section~4 will be run, so that the expected figures throughout this
-report can be replaced with measured ones and timing data for the Final Report and
-demo.
 
 \end{document}
