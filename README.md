@@ -32,11 +32,11 @@ logic itself is hand-written.
 | [`src/wordlist.txt`](src/wordlist.txt) | Dictionary attack candidate passwords |
 | [`src/known_passwords.txt`](src/known_passwords.txt) | Spray attack's known/default passwords |
 | [`src/targets.txt`](src/targets.txt) | Spray attack's target account list |
-| [`docs/design_report.md`](docs/design_report.md) | Attack definitions, topology, timing & packet diagrams |
+| [`docs/design_report.tex`](docs/design_report.tex) | Attack definitions, topology, timing & packet diagrams |
 | [`CSE406ProjectJan2026.pdf`](CSE406ProjectJan2026.pdf) | Original assignment brief |
 
 See [`src/README.md`](src/README.md) for setup and run instructions
-(single-host and two-VM), and [`docs/design_report.md`](docs/design_report.md)
+(single-host and two-VM), and [`docs/design_report.tex`](docs/design_report.tex)
 for the write-up required by the assignment.
 
 ## Quick start
