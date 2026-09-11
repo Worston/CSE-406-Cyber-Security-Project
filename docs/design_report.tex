@@ -73,7 +73,6 @@
 \begin{tabular}{ll}
 \textbf{Course:} & CSE406 --- Computer Security Sessional \\
 \textbf{Assignment:} & Attack Tool 9 \\
-\textbf{Report deadline:} & 11th Week \\
 \end{tabular}
 \par}
 
@@ -81,18 +80,17 @@
 
 {\large\bfseries\color{navy} Group Members\par}
 \vspace{0.4cm}
-\begin{tabular}{lll}
+\begin{tabular}{p{6cm}p{2.5cm}}
 \toprule
 \rowcolor{navy!12}
-\textbf{Member} & \textbf{Student ID} & \textbf{Responsibility} \\
+\textbf{Member} & \textbf{Student ID} \\
 \midrule
-\rule{0pt}{2.2ex}\underline{\hspace{4cm}} & \underline{\hspace{2.5cm}} & Webapp + defense mechanism \\[1.2ex]
-\underline{\hspace{4cm}} & \underline{\hspace{2.5cm}} & Attacker tools + report diagrams \\
+Arnob Biswas & 2105015 \\[1.2ex]
+Zaki Rehnoom Unmona & 2105016 \\
 \bottomrule
 \end{tabular}
 
 \vspace{1.6cm}
-{\large \today\par}
 \vspace{1cm}
 \end{titlepage}
 
@@ -106,40 +104,40 @@
 % ==================================================
 \section{Overview of the Project Idea}
 
-This project implements and demonstrates two related password-guessing attacks,
-together with a working defense against them:
+Two related password-guessing attacks are implemented and demonstrated in this
+project, together with a working defense against them:
 
 \begin{itemize}[leftmargin=*]
-  \item \textbf{Dictionary attack} --- the attacker targets \emph{one specific
-    account} and tries a large ordered list of candidate passwords (a ``dictionary''
-    of common/likely passwords) against it, one at a time, until the server accepts
-    one or the list is exhausted. The attack works because many users choose
-    passwords that appear in common wordlists.
-  \item \textbf{Known password attack} (password spraying / credential reuse) ---
-    the attacker instead starts from a small set of \emph{known} passwords ---
+  \item \textbf{Dictionary attack} --- \emph{one specific account} is targeted, and a
+    large ordered list of candidate passwords (a ``dictionary'' of common/likely
+    passwords) is tried against it, one at a time, until one is accepted by the
+    server or the list is exhausted. The attack works because passwords that appear
+    in common wordlists are chosen by many users.
+  \item \textbf{Known password attack} (password spraying / credential reuse) --- a
+    small set of \emph{known} passwords is used as the starting point instead ---
     defaults, previously breached passwords, or passwords obtained from another
-    attack (e.g.\ sniffing) --- and tries each one against a \emph{wide list of
-    accounts}. This exploits password reuse and default credentials rather than weak
-    individual passwords, and is harder to detect with a naive per-account lockout,
-    since no single account receives many failed attempts.
+    attack (e.g.\ sniffing) --- and each one is tried against a \emph{wide list of
+    accounts}. Password reuse and default credentials are exploited by this, rather
+    than weak individual passwords, and detection is harder with a naive per-account
+    lockout, since many failed attempts are not received by any single account.
 \end{itemize}
 
-Per the assignment brief and our supervisor's guidance, the target will be a
+The target will be a
 vulnerable application built from scratch rather than an existing service such as SSH
 or FTP: a small signup/login web application (Flask + SQLite). The \emph{victim
 action} for the demo will be a normal user signing up and logging in through a
 browser; the \emph{attacker action} will be the two attacks above, driven by HTTP
-client code written by us --- not an existing brute-forcing tool such as Hydra or
-Medusa. Alongside the attacks, we will build a defense mechanism (account lockout
-combined with slow password hashing), so the report can show the attacks being
-mitigated, not just carried out.
+client code. \\ \\
+Alongside the attacks, a defense mechanism (account lockout combined with slow
+password hashing) will be built, so that mitigation of the attacks, not just their
+execution, can be shown in the report.
 
 % ==================================================
 \section{Network Topology, Components, and Timing Diagrams}
 
 \subsection{Topology}
 
-Development and the final demo will use the following topology: two VMs on a
+The following topology will be used for development and the final demo: two VMs on a
 host-only virtual network, plus a legitimate browser client exercising the same
 webapp.
 
@@ -182,10 +180,6 @@ webapp.
 browser client exercising the same webapp.}
 \end{figure}
 
-\emph{The IP addresses above are placeholders for the VirtualBox host-only subnet,
-to be replaced once the VMs exist, along with an \texttt{ip addr} screenshot from
-both.}
-
 \subsection{Components}
 
 \begin{table}[H]
@@ -210,9 +204,10 @@ Server / attacker logs & Record every login attempt and outcome, for the Final R
 \newpage
 \subsection{Timing Diagrams}
 
-The diagrams below describe the protocol to be implemented and the attack strategies
-to be run against it --- the intended design, to be verified once the webapp and
-attacker scripts exist. Request arrows (client $\rightarrow$ server) are shown in
+The protocol to be implemented and the attack strategies to be run against it are
+described in the diagrams below --- the intended design, to be verified once the
+webapp and attacker scripts exist. Request arrows (client $\rightarrow$ server) are
+shown in
 \textcolor{steel}{steel blue}; responses are colored by outcome ---
 \textcolor{oklive}{green for success}, \textcolor{warnamber!90!black}{amber for a
 failed attempt}, and \textcolor{lockred}{red for a lockout}.
@@ -336,12 +331,16 @@ attempts within a 30-second window.}
 % ==================================================
 \section{Packet and Frame Structure}
 
-Transport will be standard TCP carrying HTTP/1.1 (Flask's built-in development server);
-no raw Ethernet/IP crafting should be needed for this attack class, since the exploit
-is at the application layer. What is being designed from scratch is the \emph{application
-behaviour and payload} the HTTP request carries, and how the server is meant to
-interpret it --- not an existing authentication protocol implementation. The exact
-request/response format below is the intended design for the login endpoint.
+This section is less central for a dictionary/known-password attack than for
+attacks such as ARP poisoning or SYN flooding, where the attack itself consists of a
+forged or malformed packet: no raw Ethernet/IP crafting is needed here, since the
+exploit is entirely at the application layer, carried over an ordinary TCP
+connection. What is still worth designing from scratch is the \emph{application
+behaviour and the payload} carried by the HTTP request, and how it is meant to be
+interpreted by the server --- not an existing authentication protocol
+implementation. Transport will be standard TCP carrying HTTP/1.1 (Flask's built-in
+development server); the exact request/response format below is the intended design
+for the login endpoint.
 
 \subsection{Request (attacker or browser $\rightarrow$ server), one per login attempt}
 
@@ -371,18 +370,23 @@ username=alice&password=sunshine
 \caption{HTTP response codes and bodies for each login outcome.}
 \end{table}
 
-\subsection{Design Notes, and What the Packet Capture Is Expected to Show}
+\subsection{Design Notes}
 
 \begin{itemize}[leftmargin=*]
-  \item Each attempt will open its own TCP connection (the attacker scripts issue one
-    HTTP request per attempt, with no session reuse) --- a full 3-way handshake, HTTP
-    request/response, then FIN/ACK teardown per attempt. Once the two-VM setup exists,
-    this will be captured in Wireshark and annotated with source/destination port,
-    sequence numbers, and the HTTP payload of each segment (\emph{Follow $>$ HTTP
-    Stream} is the easiest way to show this in the report).
+  \item Its own TCP connection will be opened by each attempt (one HTTP request is
+    issued per attempt by the attacker scripts, with no session reuse) --- a full
+    3-way handshake, HTTP request/response, then FIN/ACK teardown per attempt. A
+    Wireshark capture of this is not required to make the case for the attack, since
+    an ordinary HTTP request/response is all that is exchanged; the attacker's own
+    logs (timestamp, username, password tried, response) already document every
+    attempt just as clearly. A capture is treated as optional, convenient evidence
+    for the Final Report rather than a planned deliverable --- if the two-VM setup is
+    already up, one could be taken in a couple of minutes (\emph{Follow $>$ HTTP
+    Stream} is the easiest way to show a request/response pair), but skipping it
+    would not weaken the report.
   \item The response to a failed login will be the same generic ``invalid username or
-    password'' whether the username does not exist or the password is wrong, so the
-    app does not leak account existence.
+    password'' whether the username does not exist or the password is wrong, so that
+    account existence is not leaked.
   \item Passwords will be sent as cleartext form data over plain HTTP in this demo (no
     TLS) --- a deliberate simplification consistent with the assignment's other
     plaintext-protocol attacks (e.g.\ Tool 2's Telnet/HTTP sniffing), and worth noting
@@ -397,39 +401,43 @@ The project will be built in the following stages.
 \begin{enumerate}[leftmargin=*]
   \item \textbf{Victim webapp (Flask + SQLite).}
     \begin{itemize}[leftmargin=*]
-      \item Signup endpoint: creates a new account, hashes and stores the password.
-      \item Login endpoint: verifies submitted credentials and returns a distinct
-        outcome for success, failure, and lockout (Section 3).
-      \item Dashboard endpoint: reachable only after a successful login, so the
+      \item Signup endpoint: a new account is created, and the password is hashed
+        and stored.
+      \item Login endpoint: submitted credentials are verified, and a distinct
+        outcome is returned for success, failure, and lockout (Section 3).
+      \item Dashboard endpoint: reachable only after a successful login, so that the
         ``victim action'' has something concrete to demonstrate.
       \item Two selectable hashing modes: a fast single SHA-256 hash (undefended
         baseline) and a salted PBKDF2 hash with a high iteration count (defended
-        mode), toggled by one configuration flag so the same webapp can demonstrate
-        both without code changes.
+        mode), toggled by one configuration flag so that both can be demonstrated by
+        the same webapp without code changes.
     \end{itemize}
-  \item \textbf{Seed data.} A handful of demo accounts: some given passwords drawn
-    from our dictionary wordlist, two sharing one default password (for the spray
-    attack), and one given a strong, list-absent password as a negative control.
+  \item \textbf{Seed data.} A handful of demo accounts will be created: some will be
+    given passwords drawn from the dictionary wordlist, two will be given the same
+    default password (for the spray attack), and one will be given a strong,
+    list-absent password as a negative control.
   \item \textbf{Attacker tools.}
     \begin{itemize}[leftmargin=*]
-      \item Dictionary-attack script: iterates a wordlist against one account via
+      \item Dictionary-attack script: a wordlist is iterated against one account via
         HTTP POST requests to \texttt{/login}, stopping on success or lockout.
-      \item Spray-attack script: iterates a small known-password list against many
-        accounts, one password against all usernames before moving to the next.
-      \item Both scripts log every attempt (timestamp, username, password tried,
-        response) for the Final Report.
+      \item Spray-attack script: a small known-password list is iterated against
+        many accounts, with one password tried against all usernames before the
+        next is used.
+      \item Every attempt (timestamp, username, password tried, response) is logged
+        by both scripts, for the Final Report.
     \end{itemize}
-  \item \textbf{Defense mechanism.} A lockout tracker recording failed attempts per
-    username and temporarily locking an account after a threshold is reached, plus
-    the slow-hash mode described above (details in Section 6).
-  \item \textbf{Test environment.} Initial development and functional testing on a
-    single machine (localhost), to validate protocol logic before introducing network
-    variables; final demo on two VirtualBox VMs on a host-only network, matching the
-    topology in Section 2, with a Wireshark capture on the link between them.
-  \item \textbf{Evaluation.} Run both attacks against the undefended webapp and record
-    outcome/timing; enable the defense mode, reset the account store, and re-run the
-    same attacks, recording the same metrics; compare the two runs for the Final
-    Report.
+  \item \textbf{Defense mechanism.} Failed attempts will be recorded per username by
+    a lockout tracker, and an account will be temporarily locked once a threshold is
+    reached, plus the slow-hash mode described above (details in Section 6).
+  \item \textbf{Test environment.} Initial development and functional testing will be
+    carried out on a single machine (localhost), so that protocol logic is validated
+    before network variables are introduced; the final demo will be run on two
+    VirtualBox VMs on a host-only network, matching the topology in Section 2, with a
+    Wireshark capture taken on the link between them.
+  \item \textbf{Evaluation.} Both attacks will be run against the undefended webapp,
+    and outcome/timing will be recorded; the defense mode will then be enabled, the
+    account store reset, and the same attacks re-run, with the same metrics recorded;
+    the two runs will be compared for the Final Report.
 \end{enumerate}
 
 % ==================================================
@@ -439,52 +447,54 @@ Assuming the implementation works as intended, the following outcomes are expect
 
 \begin{itemize}[leftmargin=*]
   \item \textbf{Dictionary attack.} For an account whose password is a common word
-    included in our wordlist, we expect the attack to succeed within a modest number
-    of attempts (a small fraction of the wordlist), returning a successful-login
-    response and revealing the correct password. Attempts against the control account
-    with a strong, list-absent password are expected to exhaust the entire wordlist
-    without success --- confirming that the tool is working correctly and failing
-    only because the password genuinely is not guessable this way, not because of a
-    bug in the attack script.
+    included in the wordlist, the attack is expected to succeed within a modest
+    number of attempts (a small fraction of the wordlist), with a successful-login
+    response returned and the correct password revealed. When attempted against the
+    control account with a strong, list-absent password, the entire wordlist is
+    expected to be exhausted without success --- confirming that the tool is working
+    correctly and is failing only because the password genuinely is not guessable
+    this way, not because of a bug in the attack script.
   \item \textbf{Known-password (spray) attack.} For the two accounts seeded with the
-    same default password, we expect a single spray pass to compromise both, without
-    either password needing to appear in the larger dictionary wordlist ---
-    demonstrating the attack exploiting password reuse specifically, as distinct from
-    the dictionary attack's brute-force search.
-  \item \textbf{Undefended timing.} Without rate limiting, we expect the attacker to
-    be able to attempt logins about as fast as the network and a single fast hash
-    allow, so we expect a wordlist of realistic size (on the order of 50--100 entries)
-    to be exhausted in well under a second, and the vulnerable accounts to be cracked
-    almost immediately.
-  \item \textbf{Defended timing.} With the lockout and slow-hash defense enabled, we
-    expect each attempt to take noticeably longer, and expect the dictionary attack to
-    be cut short by the lockout (after a small, fixed number of failed attempts) well
-    before it can exhaust even a modest wordlist --- i.e.\ a successful attack under
-    the undefended configuration is expected to become a \emph{blocked} attack under
-    the defended one, given the same wordlist and target account.
+    same default password, both are expected to be compromised by a single spray
+    pass, without either password needing to appear in the larger dictionary
+    wordlist --- demonstrating that password reuse specifically is exploited by this
+    attack, as distinct from the dictionary attack's brute-force search.
+  \item \textbf{Undefended timing.} Without rate limiting, logins are expected to be
+    attempted about as fast as the network and a single fast hash allow, so a
+    wordlist of realistic size (on the order of 50--100 entries) is expected to be
+    exhausted in well under a second, and the vulnerable accounts are expected to be
+    cracked almost immediately.
+  \item \textbf{Defended timing.} With the lockout and slow-hash defense enabled,
+    each attempt is expected to take noticeably longer, and the dictionary attack is
+    expected to be cut short by the lockout (after a small, fixed number of failed
+    attempts) well before even a modest wordlist can be exhausted --- i.e.\ a
+    successful attack under the undefended configuration is expected to become a
+    \emph{blocked} attack under the defended one, given the same wordlist and target
+    account.
 \end{itemize}
 
 % ==================================================
 \section{Defense Idea}
 
 Two complementary defenses will be built, both togglable via the same ``defense
-mode'' flag on the webapp, so the exact same attacker scripts can be run against the
-undefended and defended configurations for comparison.
+mode'' flag on the webapp, so that the undefended and defended configurations can be
+compared by running the exact same attacker scripts against them.
 
 \begin{enumerate}[leftmargin=*]
-  \item \textbf{Account lockout.} The server tracks failed login attempts per
-    username. After a small threshold of failures (e.g.\ 5) within a short time
+  \item \textbf{Account lockout.} Failed login attempts are tracked per username by
+    the server. After a small threshold of failures (e.g.\ 5) within a short time
     window (e.g.\ 30 seconds), the account is temporarily locked (e.g.\ for 60
-    seconds) and further attempts receive \texttt{429 TOO MANY REQUESTS} regardless
-    of the password supplied. This directly caps how many guesses an attacker can
-    make against a single account before being stopped, and blocks both the
-    dictionary attack (many attempts, one account) and, per-account, the spray attack.
+    seconds), and \texttt{429 TOO MANY REQUESTS} is returned for further attempts
+    regardless of the password supplied. The number of guesses that can be made
+    against a single account before being stopped is directly capped by this, and
+    both the dictionary attack (many attempts, one account) and, per-account, the
+    spray attack are blocked.
   \item \textbf{Slow password hashing.} In defended mode, passwords are hashed with
     PBKDF2-HMAC-SHA256 using a high iteration count (e.g.\ 200{,}000) instead of a
-    single fast SHA-256 hash. This is a standard, well-documented technique for
-    deliberately raising the CPU cost of each password check by one to two orders of
-    magnitude, which slows down guessing even in scenarios (e.g.\ an offline attack on
-    a stolen hash) where a lockout counter would not apply.
+    single fast SHA-256 hash. This is a standard, well-documented technique by which
+    the CPU cost of each password check is deliberately raised by one to two orders
+    of magnitude, and by which guessing is slowed down even in scenarios (e.g.\ an
+    offline attack on a stolen hash) where a lockout counter would not apply.
 \end{enumerate}
 
 \begin{table}[H]
@@ -507,18 +517,20 @@ reported in the Final Report.}
 % ==================================================
 \section{Conclusion}
 
-This design report has laid out the target, protocol, and topology for a dictionary
-attack and a known-password (spray) attack against a purpose-built, vulnerable
-signup/login webapp, together with a concrete lockout- and slow-hash-based defense.
-Section~2 fixes the environment the attacks will run in, Section~3 pins down the
-exact request/response format they will exploit, and Section~4 breaks the work into
-independently testable stages. Sections~5 and~6 commit, in advance, to what a
-successful attack and a successful defense should look like, so the Final Report can
-be judged against a clear baseline rather than justified after the fact.
+The target, protocol, and topology for a dictionary attack and a known-password
+(spray) attack against a purpose-built, vulnerable signup/login webapp have been laid
+out in this design report, together with a concrete lockout- and slow-hash-based
+defense. The environment the attacks will run in is fixed by Section~2, the exact
+request/response format they will exploit is pinned down by Section~3, and the work
+is broken into independently testable stages by Section~4. What a successful attack
+and a successful defense should look like is committed to, in advance, by
+Sections~5 and~6, so that the Final Report can be judged against a clear baseline
+rather than justified after the fact.
 
-The next milestone is implementation: building the webapp and the two attacker
-tools, standing up the two-VM topology described in Section~2, and running the
-evaluation from Section~4 to replace the expected figures throughout this report
-with measured ones, timing data, and packet captures for the Final Report and demo.
+The next milestone is implementation: the webapp and the two attacker tools will be
+built, the two-VM topology described in Section~2 will be stood up, and the
+evaluation from Section~4 will be run, so that the expected figures throughout this
+report can be replaced with measured ones, timing data, and packet captures for the
+Final Report and demo.
 
 \end{document}
