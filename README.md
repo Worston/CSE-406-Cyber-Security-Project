@@ -29,8 +29,8 @@ logic itself is hand-written.
 | [`src/attacker_dict.py`](src/attacker_dict.py) | Dictionary attack: one account, many passwords |
 | [`src/attacker_spray.py`](src/attacker_spray.py) | Known-password attack: many accounts, few passwords |
 | [`src/templates/`](src/templates) | Signup / login / dashboard pages |
-| [`src/wordlist.txt`](src/wordlist.txt) | Dictionary attack candidate passwords |
-| [`src/known_passwords.txt`](src/known_passwords.txt) | Spray attack's known/default passwords |
+| [`src/wordlist.txt`](src/wordlist.txt) | Dictionary attack candidate passwords (top 1000 real-world leaked passwords, from [SecLists](https://github.com/danielmiessler/SecLists)) |
+| [`src/known_passwords.txt`](src/known_passwords.txt) | Spray attack's known/default passwords (from SecLists' Default-Credentials and corporate seasonal-spray corpora) |
 | [`src/targets.txt`](src/targets.txt) | Spray attack's target account list |
 | [`docs/design_report.tex`](docs/design_report.tex) | Attack definitions, topology, timing & packet diagrams |
 | [`CSE406ProjectJan2026.pdf`](CSE406ProjectJan2026.pdf) | Original assignment brief |
