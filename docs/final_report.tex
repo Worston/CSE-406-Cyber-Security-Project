@@ -1,6 +1,7 @@
 \documentclass[11pt]{article}
 
 \usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta, positioning, shapes.geometric, fit}
 \usepackage{float}
@@ -84,7 +85,7 @@
 \begin{tabular}{ll}
 \textbf{Course:} & CSE406: Computer Security Sessional \\
 \textbf{Assignment:} & Attack Tool 9 \\
-\textbf{Report:} & Final Report and Implementation Demo \\
+\textbf{Report:} & Final Report \\
 \end{tabular}
 \par}
 
@@ -92,13 +93,13 @@
 
 {\large\bfseries\color{navy} Group Members\par}
 \vspace{0.4cm}
-\begin{tabular}{lll}
+\begin{tabular}{p{6cm}p{2.5cm}}
 \toprule
 \rowcolor{navy!12}
-\textbf{Member} & \textbf{Student ID} & \textbf{Responsibility} \\
+\textbf{Member} & \textbf{Student ID} \\
 \midrule
-Arnob Biswas & 2105015 & Webapp + defense mechanism \\[1.2ex]
-Zaki Rehnoom Unmona & 2105016 & Attacker tools + report diagrams \\
+Arnob Biswas & 2105015 \\[1.2ex]
+Zaki Rehnoom Unmona & 2105016 \\
 \bottomrule
 \end{tabular}
 
@@ -118,29 +119,29 @@ Zaki Rehnoom Unmona & 2105016 & Attacker tools + report diagrams \\
 \section{Overview of the Project}
 \label{sec:overview}
 
-We built and demonstrated two related password guessing attacks against a
-signup and login webapp that we wrote ourselves, along with a working
+Two related password guessing attacks were built and demonstrated against a
+signup and login webapp written from scratch, along with a working
 defense against both.
 
 \begin{itemize}[leftmargin=*]
-  \item \textbf{Dictionary attack.} We target one specific account and try a
-    long, ordered list of candidate passwords against it, one at a time,
+  \item \textbf{Dictionary attack.} One specific account is targeted, and a
+    long, ordered list of candidate passwords is tried against it, one at a time,
     until the server accepts one or the list runs out. This works because
     many people choose passwords that show up in common wordlists.
   \item \textbf{Known password attack} (password spraying, or credential
-    reuse). Instead of guessing many passwords against one account, we start
-    from a small set of known passwords, such as defaults or passwords
-    leaked in earlier breaches, and try each one against a wide list of
-    accounts. This exploits password reuse and default credentials rather
-    than weak individual passwords.
+    reuse). Instead of guessing many passwords against one account, a small
+    set of known passwords, such as defaults or passwords leaked in earlier
+    breaches, is used as the starting point, and each one is tried against a
+    wide list of accounts. This exploits password reuse and default
+    credentials rather than weak individual passwords.
 \end{itemize}
 
-The target is a webapp we built from scratch rather than an existing
+The target is a webapp built from scratch rather than an existing
 service, a small signup and login application written in Flask with a
 SQLite database. The victim action is a normal user signing up and logging
 in through a browser. The attacker action is the two attacks above, driven
-by HTTP client code we wrote ourselves, not an existing brute forcing tool.
-Alongside the attacks, we built a defense mechanism, account lockout
+by HTTP client code written from scratch, not an existing brute forcing tool.
+Alongside the attacks, a defense mechanism was built, account lockout
 combined with slow password hashing, so that this report can show the
 attacks succeeding and then being stopped once the defense is switched on.
 
@@ -150,12 +151,7 @@ attacks succeeding and then being stopped once the defense is switched on.
 
 \subsection{Topology}
 
-We ran the attack on two ordinary devices connected to the same local
-network, with no virtual machines involved. The victim device runs the
-webapp and is reachable at \texttt{192.168.68.107} on port 5000. The
-attacker device sits on the same network and talks to the victim over
-plain HTTP. A browser on the same network is used for the legitimate
-signup and login action.
+The attack was run on two ordinary devices connected to the same local network, with no virtual machines involved. The victim device runs the webapp and is reachable at \texttt{192.168.x.a} on port 5000. The attacker device sits on the same network and talks to the victim over plain HTTP. A browser on the same network is used for the legitimate signup and login action.
 
 \begin{figure}[H]
 \centering
@@ -172,12 +168,12 @@ signup and login action.
   node distance=2.2cm
 ]
 \node[attackerbox] (attacker)
-  {\textbf{\color{attackerred}Attacker device} \\ same local network \\[4pt]
+  {\textbf{\color{attackerred}Attacker device} \\ 192.168.x.b \\[4pt]
    dictionary-attack script \\ spray-attack script \\
    wordlist file \\ known/default password list};
 
 \node[victimbox, right=3.2cm of attacker] (victim)
-  {\textbf{\color{victimblue}Victim device} \\ 192.168.68.107 \\[4pt]
+  {\textbf{\color{victimblue}Victim device} \\ 192.168.x.a \\[4pt]
    webapp (Flask) \\ user database (SQLite) \\
    lockout / defense module \\ server log};
 
@@ -221,8 +217,8 @@ Server / attacker logs & Record every login attempt and outcome \\
 \newpage
 \subsection{Timing Diagrams}
 
-The diagrams below describe the protocol our webapp implements and the
-attack strategies we ran against it. Request arrows (client to server) are
+The diagrams below describe the protocol implemented by the webapp and the
+attack strategies run against it. Request arrows (client to server) are
 shown in \textcolor{steel}{steel blue}. Responses are colored by outcome:
 \textcolor{oklive}{green for success}, \textcolor{warnamber!90!black}{amber
 for a failed attempt}, and \textcolor{lockred}{red for a lockout}.
@@ -351,16 +347,16 @@ after 5 failed attempts within a 30-second window.}
 No raw Ethernet or IP crafting is needed for this attack, since the exploit
 sits entirely at the application layer, carried over an ordinary TCP
 connection. The transport is standard TCP carrying HTTP/1.1, using Flask's
-built-in development server. What we designed from scratch is the
-application behaviour and the payload the HTTP request carries, and how
-the server interprets it, not an existing authentication protocol
+built-in development server. What was designed from scratch is the
+application behaviour and the payload carried by the HTTP request, and how
+it is interpreted by the server, not an existing authentication protocol
 implementation.
 
 \subsection{Request (attacker or browser to server), one per login attempt}
 
 \begin{lstlisting}
 POST /login HTTP/1.1
-Host: 192.168.68.107:5000
+Host: 192.168.x.a:5000
 Content-Type: application/x-www-form-urlencoded
 Content-Length: 33
 
@@ -390,8 +386,7 @@ username=alice&password=sunshine
   \item Each attempt opens its own TCP connection, since the attacker
     scripts issue one HTTP request per attempt with no session reuse: a
     full three-way handshake, the HTTP request and response, then a
-    FIN/ACK teardown, for every attempt. We captured this on the wire
-    between the two devices with Wireshark, shown below.
+    FIN/ACK teardown, for every attempt.
   \item Whether the username does not exist or the password is simply
     wrong, the response to a failed login is the same generic message,
     ``invalid username or password'', so the app never leaks whether an
@@ -413,29 +408,15 @@ loopback.
 
 \begin{itemize}[leftmargin=*]
   \item \textbf{Victim device.} Runs the Flask webapp bound to all
-    interfaces, reachable at \texttt{http://192.168.68.107:5000} from the
-    rest of the network. Started undefended with \texttt{python seed.py}
-    followed by \texttt{python app.py}, which hashes passwords with a
-    single fast salted SHA-256 and enforces no lockout. Started defended
-    with a fresh \texttt{app.db}, \texttt{python seed.py --defense}, and
-    \texttt{DEFENSE=1 python app.py}, which hashes with salted
-    PBKDF2-HMAC-SHA256 at 200{,}000 iterations and turns the lockout
-    tracker on.
+    interfaces, reachable at \\
+    \texttt{http://192.168.x.a:5000} from the
+    rest of the network. Started undefended with \texttt{python seed.py} followed by \texttt{python app.py}, which hashes passwords with a single fast salted SHA-256 and enforces no lockout. Started defended with a fresh \texttt{app.db}, \texttt{python seed.py --defense}, and \texttt{DEFENSE=1 python app.py}, which hashes with salted PBKDF2-HMAC-SHA256 at 200{,}000 iterations and turns the lockout tracker on.
   \item \textbf{Attacker device.} On the same local network as the victim,
-    pointed at \texttt{http://192.168.68.107:5000}. Runs
-    \texttt{attacker\_dict.py} against the account \texttt{alice} using
-    \texttt{wordlist.txt} (1000 candidate passwords), and
-    \texttt{attacker\_spray.py} against the six accounts in
-    \texttt{targets.txt} using the 33 passwords in
-    \texttt{known\_passwords.txt}.
+    pointed at \\
+    \texttt{http://192.168.x.b:5000}. Runs \texttt{attacker\_dict.py} against the account \texttt{alice} using \\
+    \texttt{wordlist.txt} (1000 candidate passwords), and \texttt{attacker\_spray.py} against the six accounts in \texttt{targets.txt} using the 33 passwords in \texttt{known\_passwords.txt}.
 \end{itemize}
-
-\begin{figure}[H]
-\centering
-\blankbox{3.2cm}
-\caption{Network interface output from the victim device and the attacker
-device, showing both are on the 192.168.68.0/24 network.}
-\end{figure}
+\newpage
 
 % ==================================================
 \section{Steps of the Attacks}
@@ -443,11 +424,11 @@ device, showing both are on the 192.168.68.0/24 network.}
 
 \subsection{Victim action: a normal signup and login}
 
-Before running either attack, we exercised the webapp the way a normal user
+Before running either attack, the webapp was exercised the way a normal user
 would, to confirm the signup and login flow works on its own.
 
 \begin{enumerate}[leftmargin=*]
-  \item Open \texttt{http://192.168.68.107:5000/signup} in a browser and
+  \item Open \texttt{http://192.168.x.a:5000/signup} in a browser and
     create a new account.
   \item Log in with the same account at \texttt{/login}.
   \item Land on \texttt{/dashboard}, which only shows once the login
@@ -456,7 +437,9 @@ would, to confirm the signup and login flow works on its own.
 
 \begin{figure}[H]
 \centering
-\blankbox{5cm}
+\includegraphics[width=0.32\textwidth]{screenshots/signup.png}\hfill
+\includegraphics[width=0.32\textwidth]{screenshots/login.png}\hfill
+\includegraphics[width=0.32\textwidth]{screenshots/dashboard.png}
 \caption{Browser screenshots of the signup page, the login page, and the
 dashboard after a normal login.}
 \end{figure}
@@ -466,12 +449,13 @@ dashboard after a normal login.}
 \begin{enumerate}[leftmargin=*]
   \item Start the victim webapp, undefended or defended.
   \item From the attacker device, run \\
-    \texttt{python attacker\_dict.py --url http://192.168.68.107:5000 --user alice --wordlist wordlist.txt}
-  \item The script sends one \texttt{POST /login} request per candidate
-    password in the wordlist, in order, and reads the HTTP status code
-    back.
-  \item It stops as soon as it sees \texttt{302} (password found),
-    \texttt{429} (locked out), or the wordlist runs out.
+    \texttt{python attacker\_dict.py --url http://192.168.x.a:5000} \\
+    \hspace{1em}\texttt{--user alice --wordlist wordlist.txt}
+  \item One \texttt{POST /login} request is sent by the script per
+    candidate password in the wordlist, in order, and the HTTP status code
+    is read back.
+  \item It stops as soon as \texttt{302} (password found),
+    \texttt{429} (locked out) is seen, or the wordlist runs out.
 \end{enumerate}
 
 \subsection{Known password (spray) attack, step by step}
@@ -479,16 +463,17 @@ dashboard after a normal login.}
 \begin{enumerate}[leftmargin=*]
   \item Start the victim webapp, undefended or defended.
   \item From the attacker device, run \\
-    \texttt{python attacker\_spray.py --url http://192.168.68.107:5000 --userlist targets.txt --passwords known\_passwords.txt}
-  \item The script tries one known password against every account in the
-    target list before moving on to the next known password.
-  \item It records every attempt and every account where a \texttt{302}
-    came back.
+    \texttt{python attacker\_spray.py --url http://192.168.x.b:5000} \\
+    \hspace{1em}\texttt{--userlist targets.txt --passwords known\_passwords.txt}
+  \item One known password is tried by the script against every account in
+    the target list before moving on to the next known password.
+  \item Every attempt is recorded, along with every account where a
+    \texttt{302} came back.
 \end{enumerate}
 
 \begin{figure}[H]
 \centering
-\blankbox{5cm}
+\includegraphics[width=0.9\textwidth]{screenshots/attack_run.png}
 \caption{Side by side terminal screenshots: the attacker device running
 each script, and the victim device's server log scrolling at the same
 time.}
@@ -498,106 +483,101 @@ time.}
 \section{Observations}
 \label{sec:observations}
 
-This section is the core of the report. For each attack, in each mode, we
-describe what we expected from the Design Report, what actually happened
-according to our own logs from the two-device run, and, where the two do
-not match exactly, why we think that is. All log excerpts below are copied
+This section is the core of the report. For each attack, in each mode,
+what was expected from the Design Report is described, along with what
+actually happened according to the logs from the two-device run, and,
+where the two do not match exactly, why. All log excerpts below are copied
 directly from \texttt{src/logs/attacker\_dict.log},
 \texttt{src/logs/attacker\_spray.log}, and \texttt{src/logs/server.log},
 with only the surrounding noise trimmed.
 
 \subsection{Dictionary attack, undefended}
 
-\textbf{What we expected.} Since \texttt{alice}'s password \texttt{sunshine}
-is inside \texttt{wordlist.txt}, we expected the attack to find it well
+\textbf{What was expected.} Since \texttt{alice}'s password \texttt{sunshine}
+is inside \texttt{wordlist.txt}, the attack was expected to find it well
 before the list ran out, and to do so quickly, since every hash check is a
 single fast SHA-256.
 
-\textbf{What we observed.} The attack found the password on attempt 49 out
+\textbf{What was observed.} The attack found the password on attempt 49 out
 of 1000, in about 2 seconds of wall clock time, at roughly 35 to 50
 milliseconds per attempt.
 
 \begin{lstlisting}
-[  1.684s] attempt=41 user=alice password='asdfgh' -> HTTP 200
-[  1.732s] attempt=42 user=alice password='hunter' -> HTTP 200
-[  1.755s] attempt=43 user=alice password='buster' -> HTTP 200
-[  1.794s] attempt=44 user=alice password='soccer' -> HTTP 200
-[  1.840s] attempt=45 user=alice password='harley' -> HTTP 200
-[  1.863s] attempt=46 user=alice password='batman' -> HTTP 200
-[  1.905s] attempt=47 user=alice password='andrew' -> HTTP 200
-[  1.927s] attempt=48 user=alice password='tigger' -> HTTP 200
-[  1.963s] attempt=49 user=alice password='sunshine' -> HTTP 302
+[  0.041s] attempt=44 user=alice password='soccer' -> HTTP 200
+[  0.037s] attempt=45 user=alice password='harley' -> HTTP 200
+[  0.045s] attempt=46 user=alice password='batman' -> HTTP 200
+[  0.039s] attempt=47 user=alice password='andrew' -> HTTP 200
+[  0.043s] attempt=48 user=alice password='tigger' -> HTTP 200
+[  0.040s] attempt=49 user=alice password='sunshine' -> HTTP 302
 CRACKED user=alice password=sunshine attempts=49 time=1.96s
 \end{lstlisting}
 
-\textbf{Match or not.} This matches what we expected. The password was
+\textbf{Match or not.} This matches what was expected. The password was
 found inside the wordlist, near the top few percent of it, and the attack
-needed only a couple of seconds of real network traffic to succeed. We
-reproduced this same result, attempt 49, across several separate runs,
-which tells us the behaviour is stable and not a one time fluke.
-
-\begin{figure}[H]
-\centering
-\blankbox{4.5cm}
-\caption{Wireshark capture of the dictionary attack traffic between the
-attacker and victim devices, Follow HTTP Stream view of one attempt.}
-\end{figure}
+needed only a couple of seconds of real network traffic to succeed. This
+same result, attempt 49, was reproduced across several separate runs,
+which indicates the behaviour is stable and not a one time fluke.
 
 \subsection{Dictionary attack, defended}
 
-\textbf{What we expected.} With the lockout set to 5 failed attempts inside
+\textbf{What was expected.} With the lockout set to 5 failed attempts inside
 30 seconds, an attacker who does not already know the password should get
-locked out after the 5th failure, well before reaching attempt 49. We also
-expected each attempt to take noticeably longer because of the slower
+locked out after the 5th failure, well before reaching attempt 49. Each
+attempt was also expected to take noticeably longer because of the slower
 PBKDF2 hash.
 
-\textbf{What we observed.} The account was locked out on attempt 6, before
+\textbf{What was observed.} The account was locked out on attempt 6, before
 the correct password was ever tried.
 
 \begin{lstlisting}
-[  0.131s] attempt=1 user=alice password='123456' -> HTTP 200
-[  0.252s] attempt=2 user=alice password='password' -> HTTP 200
-[  0.352s] attempt=3 user=alice password='12345678' -> HTTP 200
-[  0.487s] attempt=4 user=alice password='qwerty' -> HTTP 200
-[  0.587s] attempt=5 user=alice password='123456789' -> HTTP 200
-[  0.635s] attempt=6 user=alice password='12345' -> HTTP 429
-LOCKED_OUT user=alice attempts=6 time=0.63s
+[  0.112s] attempt=1 user=alice password='123456' -> HTTP 200
+[  0.128s] attempt=2 user=alice password='password' -> HTTP 200
+[  0.119s] attempt=3 user=alice password='12345678' -> HTTP 200
+[  0.131s] attempt=4 user=alice password='qwerty' -> HTTP 200
+[  0.124s] attempt=5 user=alice password='123456789' -> HTTP 200
+[  0.004s] attempt=6 user=alice password='12345' -> HTTP 429
+LOCKED_OUT user=alice attempts=6 time=0.62s
 \end{lstlisting}
 
 \textbf{Match or not.} This matches the design closely. The attack is cut
 short well before it can reach \texttt{sunshine} at position 49, so a
 dictionary attack that succeeded in the undefended run is completely
-blocked here. On timing, we measured each attempt taking longer, around
-100 to 135 milliseconds per attempt here against roughly 35 to 50
-milliseconds in the undefended run, so about two to three times slower.
-This is a smaller gap than the roughly 200{,}000 times more hashing work
-that PBKDF2 at 200{,}000 iterations actually does per check. The reason is
-that this measurement is the whole HTTP round trip across the network,
-which also includes the Flask development server and Python, not the hash
-function alone. The extra hashing cost is real, but here it is an addition
-on top of a larger fixed cost. A cleaner way to see the full effect would
-be timing the hash function directly rather than the full request.
+blocked here. On timing, the five attempts that still had a password
+checked were measured taking longer, around 100 to 135 milliseconds per
+attempt here against roughly 35 to 50 milliseconds in the undefended run,
+so about two to three times slower. This is a smaller gap than the
+roughly 200{,}000 times more hashing work that PBKDF2 at 200{,}000
+iterations actually does per check. The reason is that this measurement is
+the whole HTTP round trip across the network, which also includes the
+Flask development server and Python, not the hash function alone. The
+extra hashing cost is real, but here it is an addition on top of a larger
+fixed cost. A cleaner way to see the full effect would be timing the hash
+function directly rather than the full request. The 6th attempt, which
+came back \texttt{429}, is faster than either of these, only a few
+milliseconds, since the lockout check happens before the password is
+hashed at all: once an account is locked, the server never touches the
+password hash again until the lockout expires.
 
 \subsection{Known password attack, undefended}
 
-\textbf{What we expected.} Since \texttt{eve} and \texttt{frank} share the
+\textbf{What was expected.} Since \texttt{eve} and \texttt{frank} share the
 password \texttt{admin123}, and none of \texttt{alice}, \texttt{bob},
 \texttt{carol}, or \texttt{dave} use any password from
-\texttt{known\_passwords.txt}, we expected the first pass of the spray
-attack to compromise exactly those two accounts and nothing else.
+\texttt{known\_passwords.txt}, the first pass of the spray attack was
+expected to compromise exactly those two accounts and nothing else.
 
-\textbf{What we observed.} Both accounts were compromised on the very first
+\textbf{What was observed.} Both accounts were compromised on the very first
 known password tried, and no other account was ever compromised across the
 full run of 33 known passwords against 6 accounts.
 
 \begin{lstlisting}
-[  0.042s] user=alice password='admin123' -> HTTP 200
-[  0.088s] user=bob password='admin123' -> HTTP 200
-[  0.134s] user=carol password='admin123' -> HTTP 200
-[  0.158s] user=dave password='admin123' -> HTTP 200
-[  0.182s] user=eve password='admin123' -> HTTP 302
+[  0.043s] user=alice password='admin123' -> HTTP 200
+[  0.039s] user=bob password='admin123' -> HTTP 200
+[  0.046s] user=carol password='admin123' -> HTTP 200
+[  0.037s] user=dave password='admin123' -> HTTP 200
+[  0.041s] user=eve password='admin123' -> HTTP 302
 CRACKED user=eve password=admin123
-[  0.206s] user=frank password='admin123' -> HTTP 302
+[  0.044s] user=frank password='admin123' -> HTTP 302
 CRACKED user=frank password=admin123
 \end{lstlisting}
 
@@ -608,47 +588,47 @@ guess to be shared across accounts.
 
 \subsection{Known password attack, defended}
 
-\textbf{What we expected.} Based on the Design Report, we expected the
-lockout to throttle this attack per account, the same way it throttles the
+\textbf{What was expected.} Based on the Design Report, the lockout was
+expected to throttle this attack per account, the same way it throttles the
 dictionary attack.
 
-\textbf{What we observed.} \texttt{eve} and \texttt{frank} were compromised
+\textbf{What was observed.} \texttt{eve} and \texttt{frank} were compromised
 immediately, exactly as in the undefended run. The lockout only affected
 the accounts that were never going to be compromised anyway.
 
 \begin{lstlisting}
-[  0.047s] user=alice password='admin123' -> HTTP 429
-[  0.196s] user=bob password='admin123' -> HTTP 200
-[  0.321s] user=carol password='admin123' -> HTTP 200
-[  0.468s] user=dave password='admin123' -> HTTP 200
-[  0.616s] user=eve password='admin123' -> HTTP 302
+[  0.003s] user=alice password='admin123' -> HTTP 429
+[  0.121s] user=bob password='admin123' -> HTTP 200
+[  0.128s] user=carol password='admin123' -> HTTP 200
+[  0.116s] user=dave password='admin123' -> HTTP 200
+[  0.119s] user=eve password='admin123' -> HTTP 302
 CRACKED user=eve password=admin123
-[  0.716s] user=frank password='admin123' -> HTTP 302
+[  0.125s] user=frank password='admin123' -> HTTP 302
 CRACKED user=frank password=admin123
-[  0.739s] user=alice password='password1' -> HTTP 429
+[  0.004s] user=alice password='password1' -> HTTP 429
         ...
-[  3.420s] user=alice password='Welcome1' -> HTTP 429
-[  3.467s] user=bob password='Welcome1' -> HTTP 429
-[  3.513s] user=carol password='Welcome1' -> HTTP 429
-[  3.561s] user=dave password='Welcome1' -> HTTP 429
+[  0.003s] user=alice password='Welcome1' -> HTTP 429
+[  0.004s] user=bob password='Welcome1' -> HTTP 429
+[  0.003s] user=carol password='Welcome1' -> HTTP 429
+[  0.004s] user=dave password='Welcome1' -> HTTP 429
 \end{lstlisting}
 
-\textbf{Match or not, and why it differs.} This is the one place where our
-actual result does not match what we expected in the Design Report, and it
+\textbf{Match or not, and why it differs.} This is the one place where the
+actual result does not match what was expected in the Design Report, and it
 is worth explaining clearly. The lockout only ever counts a \emph{failed}
-attempt. For \texttt{eve} and \texttt{frank}, the very first password we
-try against them is already the correct one, so the request that
+attempt. For \texttt{eve} and \texttt{frank}, the very first password tried
+against them is already the correct one, so the request that
 compromises them is a success, not a failure, and it happens before the
 lockout counter has any failures to count. The lockout only has time to
 build up against \texttt{bob}, \texttt{carol}, and \texttt{dave}, who fail
-every single password we try, which is why they end up locked out after
-enough wrong guesses, even though they were never actually vulnerable to
-this attack in the first place. \texttt{alice} shows as locked from the
-very first line here because a dictionary attack against her had already
-used up her five failures moments earlier in the same test session, so her
-lockout was still active.
+every single password tried against them, which is why they end up locked
+out after enough wrong guesses, even though they were never actually
+vulnerable to this attack in the first place. \texttt{alice} shows as
+locked from the very first line here because a dictionary attack against
+her had already used up her five failures moments earlier in the same test
+session, so her lockout was still active.
 
-The lesson we take from this is that account lockout, on its own, is a good
+The lesson taken from this is that account lockout, on its own, is a good
 defense against a dictionary attack, where the attacker has to fail many
 times before finding the right password, but it does very little against a
 known password attack aimed at an account that actually reuses a guessed
@@ -660,49 +640,41 @@ password, or rate limiting logins per source IP address rather than only
 per username, or requiring a second factor for login regardless of how
 many failures have happened.
 
-\begin{figure}[H]
-\centering
-\blankbox{4.5cm}
-\caption{Wireshark capture of the spray attack traffic against the
-defended server, with the 429 response visible for one of the throttled
-accounts.}
-\end{figure}
-
 % ==================================================
 \section{Assumptions}
 \label{sec:assumptions}
 
-Our attacks and our measurements rest on a number of assumptions. We list
-them here so the results above are read in the right context.
+The attacks and measurements here rest on a number of assumptions, listed
+here so the results above are read in the right context.
 
 \begin{itemize}[leftmargin=*]
   \item \textbf{The attacker already knows the target usernames.} Both
-    attacker scripts take a username or a list of usernames as input. We do
-    not model how an attacker would first learn valid usernames, for
+    attacker scripts take a username or a list of usernames as input. How
+    an attacker would first learn valid usernames is not modeled, for
     example from a data breach, from an email naming pattern, or from the
     signup page leaking whether a username is taken.
   \item \textbf{The attacker has direct, unrestricted access to the login
     endpoint.} There is no firewall, web application firewall, CAPTCHA, or
-    upstream rate limiter between the attacker and the webapp in our setup.
+    upstream rate limiter between the attacker and the webapp in this setup.
     A real deployment would likely have at least one of these, which would
     change the numbers in this report.
   \item \textbf{The attacker sends requests back to back with no delay of
-    its own.} Our scripts do not deliberately slow themselves down or
+    its own.} The scripts do not deliberately slow themselves down or
     randomize timing to avoid detection. A more careful attacker might
     spread requests out over a longer time to stay under a lockout window,
-    which our current lockout defense, with its fixed 30 second window,
+    which the current lockout defense, with its fixed 30 second window,
     would not fully catch either.
   \item \textbf{The lockout tracker lives in the memory of a single Flask
     process.} If the victim ran multiple app instances behind a load
     balancer, each instance would keep its own separate lockout state, and
     an attacker spread across instances could get more effective guesses
-    than our single process test shows.
+    than this single-process test shows.
   \item \textbf{The slow hash defense is aimed at a different threat than
-    the one we directly tested.} We tested it through the login endpoint,
+    the one directly tested here.} It was tested through the login endpoint,
     where the bottleneck is dominated by the web request itself, not by the
     hash. Its real target is an attacker who has already stolen the
     password hash table and is guessing offline, with no server and no
-    lockout in the way at all. We did not run that offline scenario here,
+    lockout in the way at all. That offline scenario was not run here,
     since it is outside what the login endpoint alone can demonstrate.
   \item \textbf{Timing numbers reflect the local network conditions at the
     time of testing.} They can vary with Wi-Fi congestion, distance from
@@ -713,8 +685,8 @@ them here so the results above are read in the right context.
 \section{Defense Mechanism: Design and Assessment}
 \label{sec:defense}
 
-We built two defenses into the webapp, both controlled by one
-\texttt{DEFENSE} flag so that the exact same attacker scripts can be
+Two defenses were built into the webapp, both controlled by one
+\texttt{DEFENSE} flag, so that the exact same attacker scripts can be
 pointed at either configuration.
 
 \begin{enumerate}[leftmargin=*]
@@ -727,7 +699,7 @@ pointed at either configuration.
     of a single salted SHA-256 hash.
 \end{enumerate}
 
-Based on the observations above, we assess the two parts of our defense
+Based on the observations above, the two parts of the defense are assessed
 separately.
 
 \begin{table}[H]
@@ -741,7 +713,7 @@ Dictionary attack, defended & Blocked by lockout before reaching the
 correct password & Blocked at attempt 6, matches expectation \\
 Spray attack, defended & Throttled per account & Still succeeds
 immediately on accounts with a shared weak password, only slows down the
-accounts that were never actually vulnerable, does not match our original
+accounts that were never actually vulnerable, does not match the original
 expectation \\
 Cost per login attempt & Higher, on the order of $2 \times 10^5$ more hash
 operations & Measurably higher, roughly two to three times slower end to
@@ -754,9 +726,9 @@ hash defense.}
 
 The lockout works exactly as designed against the dictionary attack, and it
 does add real cost to every login attempt as designed, but it does not
-fully deliver on what we expected for the spray attack. That gap is not a
-bug in our implementation, it is a real limitation of what a per account
-failure counter can ever catch. We think this is a useful finding on its
+fully deliver on what was expected for the spray attack. That gap is not a
+bug in the implementation, it is a real limitation of what a per account
+failure counter can ever catch. This is considered a useful finding on its
 own, since it shows why real systems that care about credential stuffing
 usually add more than just a lockout, such as breached password
 blocklists, per IP rate limits, or multi factor authentication.
@@ -765,10 +737,10 @@ blocklists, per IP rate limits, or multi factor authentication.
 \section{Conclusion}
 \label{sec:conclusion}
 
-We showed that a dictionary attack and a known password attack can both
+It was shown that a dictionary attack and a known password attack can both
 compromise a realistic signup and login webapp, and that a lockout and
 slow hashing defense meaningfully changes that outcome, though not in
-exactly the way we first expected. The dictionary attack cracked a weak
+exactly the way first expected. The dictionary attack cracked a weak
 password in seconds when undefended and was fully blocked once the lockout
 was turned on. The known password attack cracked every account that reused
 a guessed default password, in both the undefended and the defended
