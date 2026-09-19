@@ -1,9 +1,3 @@
-"""Creates the demo accounts directly in the database (bypassing the
-signup form, purely for convenience when resetting between demo runs).
-
-Run once per fresh app.db, matching --defense to whatever mode the
-server is currently running in (hashing must match).
-"""
 import argparse
 
 import db

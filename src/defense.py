@@ -1,4 +1,3 @@
-"""Failed-login tracking used by the webapp's lockout defense."""
 import time
 
 MAX_ATTEMPTS = 5

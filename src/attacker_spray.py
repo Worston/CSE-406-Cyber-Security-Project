@@ -1,5 +1,3 @@
-"""Known-password attack: a few known/default passwords sprayed across
-many accounts on the webapp's /login endpoint."""
 import argparse
 import os
 import time

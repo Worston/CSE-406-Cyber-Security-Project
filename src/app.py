@@ -1,10 +1,3 @@
-"""Demo signup/login webapp — the attack target.
-
-Run with DEFENSE=1 to enable the lockout + slow-hash countermeasure,
-DEFENSE unset/0 for the deliberately vulnerable baseline. Both modes
-share the same routes; only the hashing cost and lockout enforcement
-differ, so the same attacker tools can be pointed at either.
-"""
 import logging
 import os
 import threading

@@ -1,10 +1,3 @@
-"""SQLite-backed user store for the demo webapp.
-
-Password hashing is hand-written (not delegated to an existing
-cracking/hashing tool) so both the vulnerable and defended modes are
-ours: `defense=False` uses a single fast SHA-256 hash, `defense=True`
-uses salted PBKDF2-HMAC-SHA256 with a high iteration count.
-"""
 import hashlib
 import os
 import secrets

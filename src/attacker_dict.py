@@ -1,11 +1,3 @@
-"""Dictionary attack: many candidate passwords tried against one account
-on the webapp's /login endpoint.
-
-Response signals used to interpret each attempt (matches app.py):
-    HTTP 302 -> success (redirected to /dashboard)
-    HTTP 429 -> account locked (defense mode only)
-    HTTP 200 -> failed login
-"""
 import argparse
 import os
 import time
